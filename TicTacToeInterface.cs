@@ -13,14 +13,17 @@ namespace TicTacToe
 
     public partial class TicTacToeInterface : Form
     {
-        int boardSize = 3;
+        int boardSize = 19;
+        int howManyInARow = 5;
+        int cellSize = 40;
+        int spaceBetweenCells = 1;
         TicTacToeGame game;
         Label[,] board;
         public TicTacToeInterface()
         {
             InitializeComponent();
 
-            game = new TicTacToeGame(boardSize);
+            game = new TicTacToeGame(boardSize, Type.player1, Type.player2, 1 , howManyInARow);
             InitWindow();
             CreateCells();
             labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
@@ -28,21 +31,19 @@ namespace TicTacToe
 
         private void InitWindow()
         {
-            labelBoardSize.Location = new Point(boardSize * 120 + 60, 20);
-            labelHowManyInARow.Location = new Point(boardSize * 120 + 60, 42);
-            labelFirstPlayer.Location = new Point(boardSize * 120 + 60, 64);
-            numericBoardSize.Location = new Point(boardSize * 120 + 60 + labelFirstPlayer.Width + 10, 16);
-            numericHowManyInARow.Location = new Point(boardSize * 120 + 60 + labelFirstPlayer.Width + 10, 38);
-            numericFirstPlayer.Location = new Point(boardSize * 120 + 60 + labelFirstPlayer.Width + 10, 60);
-            buttonNewGame.Location = new Point(boardSize * 120 + 60, 80);
-            labelNowMoving.Location = new Point(boardSize * 120 + 60, 150);
-            labelPlayer1Score.Location = new Point(boardSize * 120 + 60, 200);
-            labelPlayer2Score.Location = new Point(boardSize * 120 + 60, 220);
+            checkPlayAgainstComputer.Location = new Point(boardSize * cellSize + 60, 35);
+            labelFirstPlayer.Location = new Point(boardSize * cellSize + 60, 64);
+            numericFirstPlayer.Location = new Point(boardSize * cellSize + 60 + labelFirstPlayer.Width + 10, 60);
+            buttonNewGame.Location = new Point(boardSize * cellSize + 60, 80);
+            buttonPlayAgain.Location = new Point(boardSize * cellSize + 60, 105);
+            labelNowMoving.Location = new Point(boardSize * cellSize + 60, 150);
+            labelPlayer1Score.Location = new Point(boardSize * cellSize + 60, 200);
+            labelPlayer2Score.Location = new Point(boardSize * cellSize + 60, 220);
 
             UpdateScore();
 
-            this.Size = new Size(boardSize * 120 + buttonNewGame.Width + labelFirstPlayer.Width + numericFirstPlayer.Width + 10,
-                                 boardSize * 120 + 55);
+            this.Size = new Size(boardSize * cellSize + buttonNewGame.Width + labelFirstPlayer.Width + numericFirstPlayer.Width + 10,
+                                 boardSize * cellSize + 55);
         }
 
         private void UpdateScore()
@@ -60,9 +61,9 @@ namespace TicTacToe
                     board[i, j] = new Label();
                     board[i, j].BackColor = SystemColors.ControlDarkDark;
                     board[i, j].Font = new Font("Microsoft Sans Serif", 30F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
-                    board[i, j].Location = new Point(10 + 120 * j, 10 + 120 * i);
+                    board[i, j].Location = new Point(10 + cellSize * j, 10 + cellSize * i);
                     board[i, j].Name = "label" + "r" + i + "c" + j;
-                    board[i, j].Size = new Size(115, 115);
+                    board[i, j].Size = new Size(cellSize - spaceBetweenCells, cellSize - spaceBetweenCells);
                     board[i, j].TextAlign = ContentAlignment.MiddleCenter;
                     board[i, j].Click += cellClicked;
                     this.Controls.Add(board[i, j]);
@@ -76,10 +77,26 @@ namespace TicTacToe
 
             int row = Convert.ToInt16(cellName.Substring(cellName.IndexOf('r') + 1, cellName.IndexOf('c') - cellName.IndexOf('r') - 1));
             int column = Convert.ToInt16(cellName.Substring(cellName.IndexOf('c') + 1, cellName.Length - cellName.IndexOf('c') - 1));
+
+            PerformMove(row, column);
+
+            if (game.CurrentPlayer.Type == Type.computer && !game.gameEnded())
+            {
+                Tuple<int, int> move = game.getComputerMove();
+                PerformMove(move.Item1, move.Item2);
+            }
+
+        }
+
+        void PerformMove(int row, int column)
+        {
             if (!game.gameEnded())
             {
-                if(game.isEmptyCell(row, column))
+                if (game.isEmptyCell(row, column))
+                {
+                    Label lbl = board[row, column];
                     lbl.Text = game.CurrentPlayer.Sign;
+                }
                 game.Act(row, column);
                 labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
             }
@@ -117,15 +134,23 @@ namespace TicTacToe
         private void buttonNewGame_Click(object sender, EventArgs e)
         {
             int firstPlayerID = Convert.ToInt16(numericFirstPlayer.Value);
-            int boardSize = Convert.ToInt16(numericBoardSize.Value);
-            int howManyInARow = Convert.ToInt16(numericHowManyInARow.Value);
-            game.Play(boardSize, (Type)firstPlayerID, howManyInARow);
+            Type player2 = Type.player2;
+            if (checkPlayAgainstComputer.Checked)
+                player2 = Type.computer;
+            game = new TicTacToeGame(boardSize, Type.player1, player2, firstPlayerID, howManyInARow);
             labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
 
+
             DisposeCells();
-            this.boardSize = boardSize;
             InitWindow();
             CreateCells();
+
+
+            if (game.CurrentPlayer.Type == Type.computer)
+            {
+                Tuple<int, int> move = game.getComputerMove();
+                PerformMove(move.Item1, move.Item2);
+            }
         }
         private void DisposeCells()
         {
@@ -134,15 +159,20 @@ namespace TicTacToe
                     board[i, j].Dispose();
         }
 
-        private void numericHowManyInARow_ValueChanged(object sender, EventArgs e)
+        private void buttonPlayAgain_Click(object sender, EventArgs e)
         {
-            if (numericHowManyInARow.Value > numericBoardSize.Value)
-                numericHowManyInARow.Value = numericBoardSize.Value;
-        }
+            int firstPlayerID = Convert.ToInt16(numericFirstPlayer.Value);
+            game.Play(boardSize, firstPlayerID, howManyInARow);
 
-        private void numericBoardSize_ValueChanged(object sender, EventArgs e)
-        {
-            numericHowManyInARow_ValueChanged(sender, e);
+            DisposeCells();
+            InitWindow();
+            CreateCells();
+
+            if (game.CurrentPlayer.Type == Type.computer)
+            {
+                Tuple<int, int> move = game.getComputerMove();
+                PerformMove(move.Item1, move.Item2);
+            }
         }
     }
 }

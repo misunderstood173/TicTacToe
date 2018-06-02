@@ -10,6 +10,7 @@ namespace TicTacToe
     {
         noValue = 0,
         player1 = 1,
-        player2 = 2
+        player2 = 2,
+        computer = 3
     }
 }

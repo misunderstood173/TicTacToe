@@ -59,15 +59,16 @@ namespace TicTacToe
         {
             return board[row, column];
          }
-        public TicTacToeGame(int boardSize = 3, Type firstPlayer = Type.player1, int howManyInARow = 3,
+        public TicTacToeGame(int boardSize = 3, Type player1Type = Type.player1, Type player2Type = Type.player2, 
+            int firstPlayer = 1, int howManyInARow = 3,
             String player1Sign = "X", String player2Sign = "O")
         {
-            player1 = new Player(Type.player1, player1Sign);
-            player2 = new Player(Type.player2, player2Sign);
+            player1 = new Player(player1Type, player1Sign);
+            player2 = new Player(player2Type, player2Sign);
             Play(boardSize, firstPlayer, howManyInARow);
         }
 
-        public void Play(int boardSize = 3, Type firstPlayer = Type.player1, int howManyInARow = 3)
+        public void Play(int boardSize = 3, int firstPlayer = 1, int howManyInARow = 3)
         {
             this.boardSize = boardSize;
             this.howManyInARow = howManyInARow;
@@ -78,7 +79,7 @@ namespace TicTacToe
                 for (int j = 0; j < boardSize; j++)
                     board[i, j] = Type.noValue;
 
-            currentPlayer = (firstPlayer == Type.player2) ? player2 : player1;
+            currentPlayer = (firstPlayer == 1) ? player1 : player2;
         }
 
         private Type winnerType(int row, int column)
@@ -214,8 +215,8 @@ namespace TicTacToe
         }
         public Player GetPlayerByType(Type playerType)
         {
-            if (playerType == Type.player1) return player1;
-            if (playerType == Type.player2) return player2;
+            if (playerType == player1.Type) return player1;
+            if (playerType == player2.Type) return player2;
             else return new Player(Type.noValue);
         }
         public bool isEmptyCell(int row, int column)
@@ -243,5 +244,19 @@ namespace TicTacToe
             if (CurrentPlayer == player1) currentPlayer = player2;
             else if (CurrentPlayer == player2) currentPlayer = player1;
         }
+
+        public Tuple<int, int> getComputerMove()
+        {
+            Random rnd = new Random();
+            int row, column;
+            do
+            {
+                row = rnd.Next(0, boardSize);
+                column = rnd.Next(0, boardSize);
+            } while (board[row, column] != Type.noValue);
+
+            return new Tuple<int, int>(row, column);
+        }
+
     }
 }
