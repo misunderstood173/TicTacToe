@@ -36,6 +36,11 @@
             this.labelPlayer2Score = new System.Windows.Forms.Label();
             this.checkPlayAgainstComputer = new System.Windows.Forms.CheckBox();
             this.buttonPlayAgain = new System.Windows.Forms.Button();
+            this.buttonStartServer = new System.Windows.Forms.Button();
+            this.labelIP = new System.Windows.Forms.Label();
+            this.textBoxIPAddress = new System.Windows.Forms.TextBox();
+            this.buttonConnect = new System.Windows.Forms.Button();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             ((System.ComponentModel.ISupportInitialize)(this.numericFirstPlayer)).BeginInit();
             this.SuspendLayout();
             // 
@@ -131,11 +136,56 @@
             this.buttonPlayAgain.UseVisualStyleBackColor = true;
             this.buttonPlayAgain.Click += new System.EventHandler(this.buttonPlayAgain_Click);
             // 
+            // buttonStartServer
+            // 
+            this.buttonStartServer.Location = new System.Drawing.Point(431, 276);
+            this.buttonStartServer.Name = "buttonStartServer";
+            this.buttonStartServer.Size = new System.Drawing.Size(138, 23);
+            this.buttonStartServer.TabIndex = 6;
+            this.buttonStartServer.Text = "Start Server";
+            this.buttonStartServer.UseVisualStyleBackColor = true;
+            this.buttonStartServer.Click += new System.EventHandler(this.buttonStartServer_Click);
+            // 
+            // labelIP
+            // 
+            this.labelIP.AutoSize = true;
+            this.labelIP.Location = new System.Drawing.Point(428, 331);
+            this.labelIP.Name = "labelIP";
+            this.labelIP.Size = new System.Drawing.Size(17, 13);
+            this.labelIP.TabIndex = 7;
+            this.labelIP.Text = "IP";
+            // 
+            // textBoxIPAddress
+            // 
+            this.textBoxIPAddress.Location = new System.Drawing.Point(451, 328);
+            this.textBoxIPAddress.Name = "textBoxIPAddress";
+            this.textBoxIPAddress.Size = new System.Drawing.Size(116, 20);
+            this.textBoxIPAddress.TabIndex = 8;
+            this.textBoxIPAddress.Text = "localhost";
+            // 
+            // buttonConnect
+            // 
+            this.buttonConnect.Location = new System.Drawing.Point(431, 354);
+            this.buttonConnect.Name = "buttonConnect";
+            this.buttonConnect.Size = new System.Drawing.Size(136, 23);
+            this.buttonConnect.TabIndex = 9;
+            this.buttonConnect.Text = "Connect";
+            this.buttonConnect.UseVisualStyleBackColor = true;
+            this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
+            // 
+            // backgroundWorker1
+            // 
+            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
+            // 
             // TicTacToeInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(581, 378);
+            this.ClientSize = new System.Drawing.Size(581, 387);
+            this.Controls.Add(this.buttonConnect);
+            this.Controls.Add(this.textBoxIPAddress);
+            this.Controls.Add(this.labelIP);
+            this.Controls.Add(this.buttonStartServer);
             this.Controls.Add(this.buttonPlayAgain);
             this.Controls.Add(this.checkPlayAgainstComputer);
             this.Controls.Add(this.numericFirstPlayer);
@@ -161,6 +211,11 @@
         private System.Windows.Forms.Label labelPlayer2Score;
         private System.Windows.Forms.CheckBox checkPlayAgainstComputer;
         private System.Windows.Forms.Button buttonPlayAgain;
+        private System.Windows.Forms.Button buttonStartServer;
+        private System.Windows.Forms.Label labelIP;
+        private System.Windows.Forms.TextBox textBoxIPAddress;
+        private System.Windows.Forms.Button buttonConnect;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 

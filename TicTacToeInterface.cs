@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -19,11 +22,22 @@ namespace TicTacToe
         int spaceBetweenCells = 1;
         TicTacToeGame game;
         Label[,] board;
+
+        private TcpClient client;
+        public StreamReader STR;
+        public StreamWriter STW;
+        public string received;
+        public string textToSend;
+        int port = 1234;
+
+        bool isConnected = false;
+        bool isClient = false;
+
         public TicTacToeInterface()
         {
             InitializeComponent();
 
-            game = new TicTacToeGame(boardSize, Type.player1, Type.player2, 1 , howManyInARow);
+            game = new TicTacToeGame(boardSize, Type.player1, Type.player2, 1, howManyInARow);
             InitWindow();
             CreateCells();
             labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
@@ -39,6 +53,11 @@ namespace TicTacToe
             labelNowMoving.Location = new Point(boardSize * cellSize + 60, 150);
             labelPlayer1Score.Location = new Point(boardSize * cellSize + 60, 200);
             labelPlayer2Score.Location = new Point(boardSize * cellSize + 60, 220);
+
+            buttonStartServer.Location = new Point(boardSize * cellSize + 60, 620);
+            labelIP.Location = new Point(boardSize * cellSize + 60, 705);
+            textBoxIPAddress.Location = new Point(boardSize * cellSize + 80, 700);
+            buttonConnect.Location = new Point(boardSize * cellSize + 60, 725);
 
             UpdateScore();
 
@@ -56,7 +75,7 @@ namespace TicTacToe
         {
             board = new Label[boardSize, boardSize];
             for (int i = 0; i < boardSize; i++)
-                for(int j = 0; j < boardSize; j++) 
+                for (int j = 0; j < boardSize; j++)
                 {
                     board[i, j] = new Label();
                     board[i, j].BackColor = SystemColors.ControlDarkDark;
@@ -70,20 +89,27 @@ namespace TicTacToe
                 }
         }
 
-        void cellClicked(object sender, EventArgs e)   
+        void cellClicked(object sender, EventArgs e)
         {
-            Label lbl = (Label)sender;
-            String cellName = lbl.Name;        //cellName = labelr<row>c<column>
-
-            int row = Convert.ToInt16(cellName.Substring(cellName.IndexOf('r') + 1, cellName.IndexOf('c') - cellName.IndexOf('r') - 1));
-            int column = Convert.ToInt16(cellName.Substring(cellName.IndexOf('c') + 1, cellName.Length - cellName.IndexOf('c') - 1));
-
-            PerformMove(row, column);
-
-            if (game.CurrentPlayer.Type == Type.computer && !game.gameEnded())
+            if (!isConnected ||
+                isConnected && ((isClient && game.CurrentPlayer.Type == Type.player2) || (!isClient && game.CurrentPlayer.Type == Type.player1)))
             {
-                Tuple<int, int> move = game.getComputerMove();
-                PerformMove(move.Item1, move.Item2);
+                Label lbl = (Label)sender;
+                String cellName = lbl.Name;        //cellName = labelr<row>c<column>
+
+                int row = Convert.ToInt16(cellName.Substring(cellName.IndexOf('r') + 1, cellName.IndexOf('c') - cellName.IndexOf('r') - 1));
+                int column = Convert.ToInt16(cellName.Substring(cellName.IndexOf('c') + 1, cellName.Length - cellName.IndexOf('c') - 1));
+
+                if (isConnected && !game.gameEnded())
+                    SendMessage(cellName);
+
+                PerformMove(row, column);
+
+                if (game.CurrentPlayer.Type == Type.computer && !game.gameEnded())
+                {
+                    Tuple<int, int> move = game.getComputerMove();
+                    PerformMove(move.Item1, move.Item2);
+                }
             }
 
         }
@@ -113,7 +139,7 @@ namespace TicTacToe
 
         private void ShowWinningCells()
         {
-            foreach (Tuple<int,int> cell in game.WinningCells)
+            foreach (Tuple<int, int> cell in game.WinningCells)
             {
                 board[cell.Item1, cell.Item2].BackColor = SystemColors.ControlLight;
             }
@@ -173,6 +199,89 @@ namespace TicTacToe
                 Tuple<int, int> move = game.getComputerMove();
                 PerformMove(move.Item1, move.Item2);
             }
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            while (client.Connected)
+            {
+                try
+                {
+                    received = STR.ReadLine();
+                    string cellName = received;
+                    int row = Convert.ToInt16(cellName.Substring(cellName.IndexOf('r') + 1, cellName.IndexOf('c') - cellName.IndexOf('r') - 1));
+                    int column = Convert.ToInt16(cellName.Substring(cellName.IndexOf('c') + 1, cellName.Length - cellName.IndexOf('c') - 1));
+
+                    PerformMove(row, column);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message.ToString());
+                }
+            }
+        }
+
+        private void buttonStartServer_Click(object sender, EventArgs e)
+        {
+            TcpListener listener = new TcpListener(IPAddress.Any, port);
+            listener.Start();
+            client = listener.AcceptTcpClient();
+            MessageBox.Show("Client connected. You are 'X'");
+            STR = new StreamReader(client.GetStream());
+            STW = new StreamWriter(client.GetStream());
+            STW.AutoFlush = true;
+            backgroundWorker1.RunWorkerAsync();
+
+            isConnected = true;
+            isClient = false;
+
+
+            game = new TicTacToeGame(boardSize, Type.player1, Type.player2, 1, howManyInARow);
+            labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
+
+            DisposeCells();
+            InitWindow();
+            CreateCells();
+        }
+
+        private void buttonConnect_Click(object sender, EventArgs e)
+        {
+            client = new TcpClient();
+            string ip = textBoxIPAddress.Text;
+            if (ip.ToLower() == "localhost")
+                ip = "127.0.0.1";
+            IPEndPoint IpEnd = new IPEndPoint(IPAddress.Parse(ip), port);
+            try
+            {
+                client.Connect(IpEnd);
+                if (client.Connected)
+                {
+                    MessageBox.Show("Connected to server. You are 'O'");
+                    STR = new StreamReader(client.GetStream());
+                    STW = new StreamWriter(client.GetStream());
+                    STW.AutoFlush = true;
+                    backgroundWorker1.RunWorkerAsync();
+
+                    isConnected = true;
+                    isClient = true;
+
+                    game = new TicTacToeGame(boardSize, Type.player1, Type.player2, 1, howManyInARow);
+                    labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
+
+                    DisposeCells();
+                    InitWindow();
+                    CreateCells();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message.ToString());
+            }
+        }
+
+        private void SendMessage(string message)
+        {
+            STW.WriteLine(message);
         }
     }
 }
