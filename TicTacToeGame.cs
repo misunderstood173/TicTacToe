@@ -15,9 +15,11 @@ namespace TicTacToe
         Player winner;
         List<Tuple<int, int>> winningCells;
         private Type[,] board;
+        private Type[,] boardForAI;
         private Player currentPlayer;
         private Player player1;
         private Player player2;
+        private int aiMoveCheck = 400;
 
         public Player CurrentPlayer
         {
@@ -61,7 +63,7 @@ namespace TicTacToe
          }
         public TicTacToeGame(int boardSize = 3, Type player1Type = Type.player1, Type player2Type = Type.player2, 
             int firstPlayer = 1, int howManyInARow = 3,
-            String player1Sign = "X", String player2Sign = "O")
+            String player1Sign = "BLACK", String player2Sign = "WHITE")
         {
             player1 = new Player(player1Type, player1Sign);
             player2 = new Player(player2Type, player2Sign);
@@ -247,6 +249,7 @@ namespace TicTacToe
 
         public Tuple<int, int> getComputerMove()
         {
+
             Random rnd = new Random();
             int row, column;
             do
@@ -255,8 +258,364 @@ namespace TicTacToe
                 column = rnd.Next(0, boardSize);
             } while (board[row, column] != Type.noValue);
 
-            return new Tuple<int, int>(row, column);
+            //return new Tuple<int, int>(row, column);
+
+            boardForAI = new Type[boardSize, boardSize];
+            for (int i = 0; i < boardSize; i++)
+                for (int j = 0; j < boardSize; j++)
+                    boardForAI[i, j] = board[i, j];
+
+            analyzeGomoku(Type.computer);
+            var result = bestGomokuMove(true, 2);
+            //Console.WriteLine("best move: x = " + result.Item1 + "  y = " + result.Item2);
+            return new Tuple<int, int>(result.Item1, result.Item2);
         }
 
+        private double analyzeGomoku(Type analysedTurn)
+        {
+            Type theOtherOne = analysedTurn == Type.computer ? Type.player1 : Type.computer;
+            double result = analyzeHorizontalSetsForPlayer(Type.computer, analysedTurn);
+            result = result - analyzeHorizontalSetsForPlayer(Type.player1, theOtherOne);
+            result = result + analyzeVerticalSetsForPlayer(Type.computer, analysedTurn);
+            result = result - analyzeVerticalSetsForPlayer(Type.player1, theOtherOne);
+            result = result + analyzeFirstDiagonalSetsForPlayer(Type.computer, analysedTurn);
+            result = result - analyzeFirstDiagonalSetsForPlayer(Type.player1, theOtherOne);
+            result = result + analyzeSecondDiagonalSetsForPlayer(Type.computer, analysedTurn);
+            result = result - analyzeSecondDiagonalSetsForPlayer(Type.player1, theOtherOne);
+            Console.WriteLine(result);
+            return result;
+        }
+
+        private double analyzeHorizontalSetsForPlayer(Type playerToCheck, Type current_turn)
+        {
+            double score = 0;
+            int countConsecutive = 0;
+            int openEnds = 0;
+            
+            for (int i = 0; i < boardSize; i++)
+            {
+                for (int a = 0; a < boardSize; a++)
+                {
+                    if (boardForAI[i,a] == playerToCheck)
+                        countConsecutive++;
+                    else if (boardForAI[i,a] == Type.noValue && countConsecutive > 0)
+                    {
+                        openEnds++;
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 1;
+                    }
+                    else if (boardForAI[i,a] == Type.noValue)
+                        openEnds = 1;
+                    else if (countConsecutive > 0)
+                    {
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 0;
+                    }
+                    else openEnds = 0;
+                }
+                if (countConsecutive > 0)
+                    score += gomokuShapeScore(countConsecutive,
+                        openEnds, current_turn == playerToCheck);
+                countConsecutive = 0;
+                openEnds = 0;
+            }
+            return score;
+        }
+
+        private double analyzeVerticalSetsForPlayer(Type playerToCheck, Type current_turn)
+        {
+            double score = 0;
+            int countConsecutive = 0;
+            int openEnds = 0;
+
+            for (int i = 0; i < boardSize; i++)
+            {
+                for (int a = 0; a < boardSize; a++)
+                {
+                    if (boardForAI[a, i] == playerToCheck)
+                        countConsecutive++;
+                    else if (boardForAI[a, i] == Type.noValue && countConsecutive > 0)
+                    {
+                        openEnds++;
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 1;
+                    }
+                    else if (boardForAI[a, i] == Type.noValue)
+                        openEnds = 1;
+                    else if (countConsecutive > 0)
+                    {
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 0;
+                    }
+                    else openEnds = 0;
+                }
+                if (countConsecutive > 0)
+                    score += gomokuShapeScore(countConsecutive,
+                        openEnds, current_turn == playerToCheck);
+                countConsecutive = 0;
+                openEnds = 0;
+            }
+            return score;
+        }
+
+        private double analyzeFirstDiagonalSetsForPlayer(Type playerToCheck, Type current_turn)
+        {
+            double score = 0;
+            int countConsecutive = 0;
+            int openEnds = 0;
+
+            for (int i = 0; i < boardSize; i++)
+            {
+                for (int a = 0; a + i < boardSize; a++)
+                {
+                    if (boardForAI[a, i + a] == playerToCheck)
+                        countConsecutive++;
+                    else if (boardForAI[a, i + a] == Type.noValue && countConsecutive > 0)
+                    {
+                        openEnds++;
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 1;
+                    }
+                    else if (boardForAI[a, i + a] == Type.noValue)
+                        openEnds = 1;
+                    else if (countConsecutive > 0)
+                    {
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 0;
+                    }
+                    else openEnds = 0;
+                }
+                if (countConsecutive > 0)
+                    score += gomokuShapeScore(countConsecutive,
+                        openEnds, current_turn == playerToCheck);
+                countConsecutive = 0;
+                openEnds = 0;
+            }
+
+            for (int i = 0; i < boardSize; i++)
+            {
+                for (int a = 0; a + i < boardSize; a++)
+                {
+                    if (boardForAI[a + i, a] == playerToCheck)
+                        countConsecutive++;
+                    else if (boardForAI[a + i, a] == Type.noValue && countConsecutive > 0)
+                    {
+                        openEnds++;
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 1;
+                    }
+                    else if (boardForAI[a + i, a] == Type.noValue)
+                        openEnds = 1;
+                    else if (countConsecutive > 0)
+                    {
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 0;
+                    }
+                    else openEnds = 0;
+                }
+                if (countConsecutive > 0)
+                    score += gomokuShapeScore(countConsecutive,
+                        openEnds, current_turn == playerToCheck);
+                countConsecutive = 0;
+                openEnds = 0;
+            }
+
+            return score;
+        }
+
+        private double analyzeSecondDiagonalSetsForPlayer(Type playerToCheck, Type current_turn)
+        {
+            double score = 0;
+            int countConsecutive = 0;
+            int openEnds = 0;
+
+            for (int i = boardSize - 1; i >= 0; i--)
+            {
+                for (int a = 0; i - a >= 0; a++)
+                {
+                    if (boardForAI[a, i - a] == playerToCheck)
+                        countConsecutive++;
+                    else if (boardForAI[a, i - a] == Type.noValue && countConsecutive > 0)
+                    {
+                        openEnds++;
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 1;
+                    }
+                    else if (boardForAI[a, i - a] == Type.noValue)
+                        openEnds = 1;
+                    else if (countConsecutive > 0)
+                    {
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 0;
+                    }
+                    else openEnds = 0;
+                }
+                if (countConsecutive > 0)
+                    score += gomokuShapeScore(countConsecutive,
+                        openEnds, current_turn == playerToCheck);
+                countConsecutive = 0;
+                openEnds = 0;
+            }
+
+            for (int i = boardSize - 1; i >= 0; i--)
+            {
+                for (int a = 0; boardSize - 1 - i + a < boardSize; a++)
+                {
+                    if (boardForAI[boardSize - a - 1, boardSize - 1 - i + a] == playerToCheck)
+                        countConsecutive++;
+                    else if (boardForAI[boardSize - a - 1, boardSize - 1 - i + a] == Type.noValue && countConsecutive > 0)
+                    {
+                        openEnds++;
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 1;
+                    }
+                    else if (boardForAI[boardSize - a - 1, boardSize - 1 - i + a] == Type.noValue)
+                        openEnds = 1;
+                    else if (countConsecutive > 0)
+                    {
+                        score += gomokuShapeScore(countConsecutive,
+                            openEnds, current_turn == playerToCheck);
+                        countConsecutive = 0;
+                        openEnds = 0;
+                    }
+                    else openEnds = 0;
+                }
+                if (countConsecutive > 0)
+                    score += gomokuShapeScore(countConsecutive,
+                        openEnds, current_turn == playerToCheck);
+                countConsecutive = 0;
+                openEnds = 0;
+            }
+
+            return score;
+        }
+
+        private double gomokuShapeScore(int consecutive, int openEnds, bool currentTurn)
+        {
+            if (openEnds == 0 && consecutive < 5)
+                return 0;
+            switch (consecutive)
+            {
+                case 4:
+                    switch (openEnds)
+                    {
+                        case 1:
+                            if (currentTurn)
+                                return 100000000;
+                            return 50;
+                        case 2:
+                            if (currentTurn)
+                                return 100000000;
+                            return 500000;
+                    }
+                    break;
+                case 3:
+                    switch (openEnds)
+                    {
+                        case 1:
+                            if (currentTurn)
+                                return 7;
+                            return 5;
+                        case 2:
+                            if (currentTurn)
+                                return 10000;
+                            return 50;
+                    }
+                    break;
+                case 2:
+                    switch (openEnds)
+                    {
+                        case 1:
+                            return 2;
+                        case 2:
+                            return 5;
+                    }
+                    break;
+                case 1:
+                    switch (openEnds)
+                    {
+                        case 1:
+                            return 0.5;
+                        case 2:
+                            return 1;
+                    }
+                    break;
+                default:
+                    return 200000000;
+            }
+            Console.WriteLine("fell through -> score 0");
+            return 0;
+        }
+
+        private Tuple<int, int, double> bestGomokuMove(bool oTurn, int depth)
+        {
+            Type color = oTurn ? Type.computer : Type.player1;
+            int xBest = -1, yBest = -1;
+            double bestScore = oTurn ? -1000000000 : 1000000000;
+            double analysis;
+            bool analysedTurn = depth % 2 == 0 ? oTurn : !oTurn;
+            Tuple<int, int>[] moves = Get_moves();
+
+            for (int i = moves.Length - 1; i > moves.Length - aiMoveCheck - 1
+                && i >= 0; i--)
+            {
+                boardForAI[moves[i].Item1, moves[i].Item2] = color;
+                if (depth == 1)
+                    analysis = analyzeGomoku(color);
+                else
+                {
+                    analysis = bestGomokuMove(!oTurn, depth - 1).Item3;
+                }
+                boardForAI[moves[i].Item1, moves[i].Item2] = Type.noValue;
+                if ((analysis > bestScore && oTurn) ||
+                    (analysis < bestScore && !oTurn))
+                {
+                    bestScore = analysis;
+                    xBest = moves[i].Item1;
+                    yBest = moves[i].Item2;
+                }
+            }
+
+            return new Tuple<int, int, double>(xBest, yBest, bestScore);
+        }
+
+        public Tuple<int, int>[] Get_moves()
+        {
+            List<Tuple<int, int>> moves = new List<Tuple<int, int>>();
+
+            for (int i = 0; i < boardSize; i++)
+            {
+                for (int j = 0; j < boardSize; j++)
+                {
+                    if (boardForAI[i,j] == Type.noValue)
+                    { 
+                        moves.Add(new Tuple<int, int>(i, j));
+                    }
+                }
+            }
+            return moves.ToArray();
+        }
     }
 }
