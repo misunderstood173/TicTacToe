@@ -20,6 +20,7 @@ namespace TicTacToe
         private Player player1;
         private Player player2;
         private int aiMoveCheck = 400;
+        private int depth = 2;
 
         public Player CurrentPlayer
         {
@@ -266,8 +267,8 @@ namespace TicTacToe
                     boardForAI[i, j] = board[i, j];
 
             analyzeGomoku(Type.computer);
-            var result = bestGomokuMove(true, 2);
-            //Console.WriteLine("best move: x = " + result.Item1 + "  y = " + result.Item2);
+            var result = bestGomokuMove(true, depth);
+            Console.WriteLine("best move: x = " + result.Item1 + "  y = " + result.Item2);
             return new Tuple<int, int>(result.Item1, result.Item2);
         }
 

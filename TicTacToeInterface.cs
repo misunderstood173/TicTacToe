@@ -121,7 +121,20 @@ namespace TicTacToe
                 if (game.isEmptyCell(row, column))
                 {
                     Label lbl = board[row, column];
-                    lbl.Text = game.CurrentPlayer.Sign;
+                    switch (game.CurrentPlayer.Sign)
+                    {
+                        case "BLACK":
+                            lbl.Image = Image.FromFile("black.png");
+                            break;
+                        case "WHITE":
+                            lbl.Image = Image.FromFile("white.png");
+                            break;
+
+                        default:
+                            lbl.Text = game.CurrentPlayer.Sign;
+                            break;
+                    }
+                    ;
                 }
                 game.Act(row, column);
                 labelNowMoving.Text = "Now moving: " + game.CurrentPlayer.Sign;
@@ -226,7 +239,7 @@ namespace TicTacToe
             TcpListener listener = new TcpListener(IPAddress.Any, port);
             listener.Start();
             client = listener.AcceptTcpClient();
-            MessageBox.Show("Client connected. You are 'X'");
+            MessageBox.Show("Client connected. You are 'BLACK'");
             STR = new StreamReader(client.GetStream());
             STW = new StreamWriter(client.GetStream());
             STW.AutoFlush = true;
@@ -256,7 +269,7 @@ namespace TicTacToe
                 client.Connect(IpEnd);
                 if (client.Connected)
                 {
-                    MessageBox.Show("Connected to server. You are 'O'");
+                    MessageBox.Show("Connected to server. You are 'WHITE'");
                     STR = new StreamReader(client.GetStream());
                     STW = new StreamWriter(client.GetStream());
                     STW.AutoFlush = true;
